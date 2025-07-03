@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HitSim</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #0f3057;
+      color: white;
+      text-align: center;
+      margin: 0;
+    }
+    canvas {
+      background: linear-gradient(#d2b48c 0% 30%, #228B22 30% 100%);
+      border: 4px solid blue;
+      display: block;
+      margin: 10px auto;
+    }
+    .page {
+      display: none;
+      padding: 20px;
+    }
+    .page:not(.hidden) {
+      display: block;
+    }
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      background: #1e90ff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+    }
+    .warning {
+      color: yellow;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    #metrics {
+      background: #002244;
+      padding: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div id="page-select" class="page">
+    <h1>Select Field Size</h1>
+    <button onclick="selectField(210)">210 ft Field</button>
+    <button onclick="selectField(350)">350 ft Field</button>
+  </div>
+
+  <div id="page-instructions" class="page hidden">
+    <h2>Camera Setup Instructions</h2>
+    <p>🎥 Place your camera <strong>15–20 feet behind home plate</strong>.</p>
+    <p>📏 Height: around <strong>4–5 feet (head level)</strong>.</p>
+    <p class="warning">⚠️ Make sure you are protected while recording!</p>
+    <button onclick="goToSim()">Continue to Simulation</button>
+  </div>
+
+  <div id="page-sim" class="page hidden">
+    <canvas id="fieldCanvas" width="900" height="500"></canvas>
+    <div id="metrics">
+      <p>Exit Velocity: <span id="velo">95</span> mph</p>
+      <p>Launch Angle: <span id="angle">28</span>°</p>
+      <p>Estimated Distance: <span id="dist">385</span> ft</p>
+      <p id="result">Result: <strong>HIT</strong></p>
+    </div>
+  </div>
+
+  <script>
+    let fenceDistance = 350;
+
+    function selectField(distance) {
+      fenceDistance = distance;
+      document.getElementById("page-select").classList.add("hidden");
+      document.getElementById("page-instructions").classList.remove("hidden");
+    }
+
+    function goToSim() {
+      document.getElementById("page-instructions").classList.add("hidden");
+      document.getElementById("page-sim").classList.remove("hidden");
+      drawField();
+      simulateHit();
+    }
+
+    function drawField() {
+      const canvas = document.getElementById("fieldCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the blue outfield fence
+      ctx.beginPath();
+      ctx.arc(450, 500, fenceDistance, Math.PI, 2 * Math.PI);
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      // Bases
+      ctx.fillStyle = "white";
+      ctx.fillRect(445, 495, 10, 10); // home
+      ctx.fillRect(445, 395, 10, 10); // second
+      ctx.fillRect(345, 445, 10, 10); // third
+      ctx.fillRect(545, 445, 10, 10); // first
+
+      // Center fielder
+      ctx.beginPath();
+      ctx.arc(450, 250, 15, 0, 2 * Math.PI);
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.strokeStyle = "white";
+      ctx.stroke();
+    }
+
+    function simulateHit() {
+      const canvas = document.getElementById("fieldCanvas");
+      const ctx = canvas.getContext("2d");
+
+      const angle = 28;
+      const velocity = 95;
+      const radians = angle * (Math.PI / 180);
+      const distance = Math.round((velocity * velocity * Math.sin(2 * radians)) / 32.174);
+      const endX = 450 + distance * Math.cos(radians);
+      const endY = 500 - distance * Math.sin(radians);
+
+      // Tracer
+      ctx.beginPath();
+      ctx.moveTo(450, 500);
+      ctx.lineTo(endX, endY);
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      let result = "HIT";
+      if (distance >= fenceDistance) {
+        result = "HOME RUN";
+      } else if (Math.abs(endX - 450) < 20 && endY < 300) {
+        result = "OUT";
+      }
+
+      document.getElementById("velo").textContent = velocity;
+      document.getElementById("angle").textContent = angle;
+      document.getElementById("dist").textContent = distance;
+      document.getElementById("result").innerHTML = `Result: <strong>${result}</strong>`;
+    }
+  </script>
+</body>
+</html>
